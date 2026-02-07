@@ -1,15 +1,7 @@
 ﻿using LocalService.Host.Infra;
-using LocalService.Host.Infra.Printing;
-using Microsoft.Win32.SafeHandles;
 using PdfiumViewer;
 using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Drawing;
 using System.Drawing.Printing;
-using System.Runtime.InteropServices;
-using System.IO;
-using System.Linq;
-//using PdfiumViewer;
 
 namespace LocalService.Host.Core;
 
@@ -36,38 +28,25 @@ public sealed class PrinterService : IPrinterService
         _logger = logger;
     }
 
-    // Generic print method: writes a temp file and dispatches to PDF/image printers
-    public async Task<PrintSubmitResult> PrintBase64Async(string documentType, string base64, string printerName, string tray, string contentType)
+    public async Task<PrintSubmitResult> PrintPdfBase64Async(string documentType, string base64, string printerName, string tray)
     {
-        var bytes = Convert.FromBase64String(base64);
-        var printdata = new PrintData { DocumentType = documentType, Base64bytes = bytes, PrinterName = printerName, Tray = tray };
-
+        PrintData printdata = new PrintData()
+        {
+            DocumentType = documentType,
+            Base64bytes = Convert.FromBase64String(base64),
+            PrinterName = printerName,
+            Tray = tray
+        };
         try
         {
-            string ext = contentType?.ToLowerInvariant() switch
-            {
-                "application/pdf" => "pdf",
-                "image/png" => "png",
-                "image/jpeg" => "jpg",
-                "image/jpg" => "jpg",
-                "image/bmp" => "bmp",
-                _ => throw new InvalidOperationException($"Unsupported contentType: {contentType}")
-            };
-
-            var filePath = await PrepareTempFile(printdata, ext);
+            var filePath = await PrepareTempFile(printdata);
 
             var sem = GetPrinterLock(printdata.PrinterName);
             await sem.WaitAsync();
+
             try
             {
-                if (ext == "pdf")
-                {
-                    PrintWithTray(printdata.PrinterName, printdata.Tray, filePath);
-                }
-                else
-                {
-                    PrintImageWithTrayFromFile(printdata.PrinterName, printdata.Tray, filePath);
-                }
+                PrintWithTray(printdata.PrinterName, printdata.Tray, filePath);
             }
             finally
             {
@@ -83,26 +62,12 @@ public sealed class PrinterService : IPrinterService
         }
     }
 
-    private IDisposable PreparePrinterScope(PrintData printdata)
-    {
-        // placeholder for dev-mode or Win32 devmode scope
-        return new DevModeScope(printdata.PrinterName, printdata.Tray);
-    }
-
-    private sealed class NoOpScope : IDisposable
-    {
-        public static readonly NoOpScope Instance = new();
-        public void Dispose() { }
-    }
-
-    // Writes provided bytes to a temporary file with the given extension and returns the path
-    private async Task<string> PrepareTempFile(PrintData printdata, string? extension = null)
+    private async Task<string> PrepareTempFile(PrintData printdata)
     {
         var tempDir = Path.Combine(Path.GetTempPath(), "LocalServicePrint");
         Directory.CreateDirectory(tempDir);
 
-        var ext = string.IsNullOrWhiteSpace(extension) ? "pdf" : extension.TrimStart('.');
-        var filePath = Path.Combine(tempDir, $"{printdata.DocumentType}_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}.{ext}");
+        var filePath = Path.Combine(tempDir, $"{printdata.DocumentType}_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}.pdf");
         await File.WriteAllBytesAsync(filePath, printdata.Base64bytes);
 
         _logger.LogInformation("---------------------------------------");
@@ -127,36 +92,6 @@ public sealed class PrinterService : IPrinterService
         using var pdf = PdfDocument.Load(pdfPath);
         using var printDoc = pdf.CreatePrintDocument();
 
-        ConfigureAndValidatePrintDocument(printDoc, printerName, trayName);
-
-        printDoc.Print();
-    }
-
-    public static void PrintImageWithTrayFromFile(string printerName, string trayName, string imageFile)
-    {
-        if (string.IsNullOrWhiteSpace(printerName))
-            throw new ArgumentException("Printer name is required", nameof(printerName));
-        if (string.IsNullOrWhiteSpace(trayName))
-            throw new ArgumentException("Tray name is required", nameof(trayName));
-        if (!File.Exists(imageFile))
-            throw new FileNotFoundException("Image file not found", imageFile);
-
-        using var image = Image.FromFile(imageFile);
-        using var printDoc = new PrintDocument();
-
-        ConfigureAndValidatePrintDocument(printDoc, printerName, trayName);
-
-        printDoc.PrintPage += (s, e) =>
-        {
-            var bounds = e.MarginBounds;
-            e.Graphics.DrawImage(image, bounds);
-        };
-
-        printDoc.Print();
-    }
-
-    private static void ConfigureAndValidatePrintDocument(PrintDocument printDoc, string printerName, string trayName)
-    {
         printDoc.PrinterSettings.PrinterName = printerName;
 
         if (!printDoc.PrinterSettings.IsValid)
@@ -172,9 +107,9 @@ public sealed class PrinterService : IPrinterService
                 var available = string.Join(", ", paperSources.Cast<PaperSource>().Select(p => p.SourceName));
                 throw new InvalidOperationException($"Tray '{trayName}' not found. Available trays: {available}");
             }
-
             printDoc.DefaultPageSettings.PaperSource = tray;
         }
+        printDoc.Print();
     }
 }
 

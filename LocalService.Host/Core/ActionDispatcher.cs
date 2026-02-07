@@ -36,21 +36,15 @@ public sealed class ActionDispatcher
 
     private async Task<ExecuteResult> HandlePrintAsync(ExecuteRequest req)
     {
-        // expected parameters: documentType, fileBase64, contentType
+        // expected parameters: documentType, fileBase64
         if (!req.Parameters.TryGetValue("documentType", out var docTypeObj) || docTypeObj is null)
             return ExecuteResult.Fail(400, "missing_documentType");
 
         if (!req.Parameters.TryGetValue("fileBase64", out var base64Obj) || base64Obj is null)
             return ExecuteResult.Fail(400, "missing_fileBase64");
 
-        string contentType;
-        if (!req.Parameters.TryGetValue("contentType", out var contentTypeObj) || contentTypeObj is null )
-             contentType  = "application/pdf"; //defukt when key not set
-        else
-            contentType = contentTypeObj.ToString() ?? "application/pdf";  //defult when value not set
         var documentType = docTypeObj.ToString() ?? "";
         var fileBase64 = base64Obj.ToString() ?? "";
-       
 
         if (string.IsNullOrWhiteSpace(documentType))
             return ExecuteResult.Fail(400, "invalid_documentType");
@@ -58,20 +52,17 @@ public sealed class ActionDispatcher
         if (string.IsNullOrWhiteSpace(fileBase64))
             return ExecuteResult.Fail(400, "invalid_fileBase64");
 
-
-
         var mapping = _config.TryGetMapping(documentType);
         if (mapping is null)
             return ExecuteResult.Fail(404, $"no_printer_mapping_for:{documentType}");
 
         try
         {
-            var printResult = await _printer.PrintBase64Async(
+            var printResult = await _printer.PrintPdfBase64Async(
                 documentType: documentType,
                 base64: fileBase64,
                 printerName: mapping.PrinterName,
-                tray: mapping.Tray,
-                contentType: contentType);
+                tray: mapping.Tray);
 
             return printResult.Success
                 ? ExecuteResult.Ok(message: "print_submitted")

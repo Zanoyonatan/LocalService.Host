@@ -2,7 +2,7 @@
 
 public interface IPrinterService
 {
-    Task<PrintSubmitResult> PrintBase64Async(string documentType, string base64, string printerName, string tray, string contentType);
+    Task<PrintSubmitResult> PrintPdfBase64Async(string documentType, string base64, string printerName, string tray);
 }
 
 public sealed class PrintSubmitResult
