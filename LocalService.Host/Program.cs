@@ -3,6 +3,7 @@ using LocalService.Host.Core;
 using LocalService.Host.Printing;
 using LocalService.Host.Infra;
 using System.Net;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 

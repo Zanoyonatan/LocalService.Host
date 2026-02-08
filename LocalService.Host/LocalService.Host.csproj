@@ -23,10 +23,17 @@
     <PackageReference Include="PdfiumViewer" Version="2.13.0" />
 	 
    
+    <PackageReference Include="PdfiumViewer.Native.x86.v8-xfa" Version="2018.4.8.256" />
+	 
+   
     <PackageReference Include="PdfiumViewer.Native.x86_64.v8-xfa" Version="2018.4.8.256" />
 	  <None Include="$(UserProfile)\.nuget\packages\pdfium.nativeassets.windows\**\runtimes\win-x64\native\pdfium.dll">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </None>
+	  <Compile Remove="Models\**" />
+	  <Content Remove="Models\**" />
+	  <EmbeddedResource Remove="Models\**" />
+	  <None Remove="Models\**" />
 	  <Content Remove="C:\Users\P0039101\.nuget\packages\pdfiumviewer.native.x86_64.v8-xfa\2018.4.8.256\Build\x64\pdfium.dll" />
 	  <None Remove="C:\Users\P0039101\.nuget\packages\pdfium.windowsv2\1.1.4\build\pdfium_x64.dll" />
 	  <None Remove="C:\Users\P0039101\.nuget\packages\pdfium.windowsv2\1.1.4\build\pdfium_x86.dll" />

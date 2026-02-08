@@ -6,26 +6,6 @@ using System.Drawing.Printing;
 
 namespace LocalService.Host.Printing;
 
-public sealed class PrintJob
-{
-    public string DocumentType { get; init; } = null!;
-    public string Base64 { get; init; } = null!;
-    public string PrinterName { get; init; } = null!;
-    public string Tray { get; init; } = null!;
-
-    // Completion source for the dispatcher to await print result
-    public TaskCompletionSource<PrintSubmitResult> Completion { get; init; } =
-        new(TaskCreationOptions.RunContinuationsAsynchronously);
-}
-
-sealed class PrintData
-{
-    public required string DocumentType { get; set; }
-    public required byte[] Base64bytes { get; set; }
-    public required string PrinterName { get; set; }
-    public required string Tray { get; set; }
-}
-
 public sealed class PrinterService : IPrinterService
 {
     private readonly ILogger<PrinterService> _logger;
@@ -43,7 +23,7 @@ public sealed class PrinterService : IPrinterService
 
     public async Task<PrintSubmitResult> PrintPdfBase64Async(string documentType, string base64, string printerName, string tray)
     {
-        PrintData printdata = new PrintData() { DocumentType = documentType, Base64bytes = Convert.FromBase64String(base64), PrinterName = printerName, Tray = tray };
+         PrintData printdata = new PrintData() { DocumentType = documentType, Base64bytes = Convert.FromBase64String(base64), PrinterName = printerName, Tray = tray };
         try
         {
             var filePath = await PrepareTempFile(printdata);

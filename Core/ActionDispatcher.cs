@@ -7,19 +7,15 @@ namespace LocalService.Host.Core;
 public sealed class ActionDispatcher
 {
     private readonly ILogger<ActionDispatcher> _logger;
-    private readonly PrinterConfigStore _config;
-    private readonly IPrinterService _printer;
+  
     private readonly PrintWorker _worker;
 
     public ActionDispatcher(
         ILogger<ActionDispatcher> logger,
-        PrinterConfigStore config,
-        IPrinterService printer,
+     
         PrintWorker worker)
     {
         _logger = logger;
-        _config = config;
-        _printer = printer;
         _worker = worker;
     }
 
@@ -57,18 +53,12 @@ public sealed class ActionDispatcher
         if (string.IsNullOrWhiteSpace(fileBase64))
             return ExecuteResult.Fail(400, "invalid_fileBase64");
 
-        var mapping = _config.TryGetMapping(documentType);
-        if (mapping is null)
-            return ExecuteResult.Fail(404, $"no_printer_mapping_for:{documentType}");
-
         try
         {
             var job = new PrintJob
             {
                 DocumentType = documentType,
-                Base64 = fileBase64,
-                PrinterName = mapping.PrinterName,
-                Tray = mapping.Tray
+                Base64 = fileBase64
             };
 
             _worker.Enqueue(job);
