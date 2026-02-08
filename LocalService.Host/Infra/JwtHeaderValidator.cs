@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-
+﻿
 namespace LocalService.Host.Infra;
 
 public static class JwtHeaderValidator

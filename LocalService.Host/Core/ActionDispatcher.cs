@@ -1,5 +1,4 @@
 ﻿using LocalService.Host.Models;
-using Microsoft.AspNetCore.Mvc;
 
 namespace LocalService.Host.Core;
 
@@ -8,15 +7,18 @@ public sealed class ActionDispatcher
     private readonly ILogger<ActionDispatcher> _logger;
     private readonly PrinterConfigStore _config;
     private readonly IPrinterService _printer;
+    private readonly PrintWorker _worker;
 
     public ActionDispatcher(
         ILogger<ActionDispatcher> logger,
         PrinterConfigStore config,
-        IPrinterService printer)
+        IPrinterService printer,
+        PrintWorker worker)
     {
         _logger = logger;
         _config = config;
         _printer = printer;
+        _worker = worker;
     }
 
     public async Task<ExecuteResult> ExecuteAsync(ExecuteRequest req)
@@ -59,15 +61,29 @@ public sealed class ActionDispatcher
 
         try
         {
-            var printResult = await _printer.PrintPdfBase64Async(
-                documentType: documentType,
-                base64: fileBase64,
-                printerName: mapping.PrinterName,
-                tray: mapping.Tray);
+            var job = new PrintJob
+            {
+                DocumentType = documentType,
+                Base64 = fileBase64,
+                PrinterName = mapping.PrinterName,
+                Tray = mapping.Tray
+            };
 
-            return printResult.Success
-                ? ExecuteResult.Accepted (message: "print_submitted")
-                : ExecuteResult.Fail(500, $"print_failed:{printResult.Error}");
+            _worker.Enqueue(job);
+
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try
+            {
+                var result = await job.Completion.Task.WaitAsync(cts.Token);
+
+                return result.Success
+                    ? ExecuteResult.Accepted(message: "print_accepted")
+                    : ExecuteResult.Fail(500, $"print_failed:{result.Error}");
+            }
+            catch (OperationCanceledException)
+            {
+                return ExecuteResult.Fail(504, "print_timeout");
+            }
         }
         catch (FormatException)
         {
@@ -75,7 +91,7 @@ public sealed class ActionDispatcher
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Print failed");
+            _logger.LogError(ex, "Print enqueue failed");
             return ExecuteResult.Fail(500, "print_failed_exception");
         }
     }

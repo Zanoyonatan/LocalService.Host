@@ -1,9 +1,22 @@
-﻿
-using LocalService.Host.Infra;
+﻿using LocalService.Host.Infra;
 using PdfiumViewer;
 using System.Collections.Concurrent;
 using System.Drawing.Printing;
+
 namespace LocalService.Host.Core;
+
+public sealed class PrintJob
+{
+    public string DocumentType { get; init; } = null!;
+    public string Base64 { get; init; } = null!;
+    public string PrinterName { get; init; } = null!;
+    public string Tray { get; init; } = null!;
+
+    // Completion source for the dispatcher to await print result
+    public TaskCompletionSource<PrintSubmitResult> Completion { get; init; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+}
+
 sealed class PrintData
 {
     public required string DocumentType { get; set; }
@@ -21,6 +34,7 @@ public sealed class PrinterService : IPrinterService
     {
         return _printerLocks.GetOrAdd(printerName, _ => new SemaphoreSlim(1, 1));
     }
+
     public PrinterService(ILogger<PrinterService> logger)
     {
         _logger = logger;
@@ -28,19 +42,18 @@ public sealed class PrinterService : IPrinterService
 
     public async Task<PrintSubmitResult> PrintPdfBase64Async(string documentType, string base64, string printerName, string tray)
     {
-
         PrintData printdata = new PrintData() { DocumentType = documentType, Base64bytes = Convert.FromBase64String(base64), PrinterName = printerName, Tray = tray };
         try
         {
             var filePath = await PrepareTempFile(printdata);
             
-            //lock by printerName
+            //lock by printerName cause each req can change default tray
             var sem = GetPrinterLock(printdata.PrinterName);
             await sem.WaitAsync();
 
             try
             {
-                PrintWithTray(printdata.PrinterName, printdata.Tray,filePath);
+                PrintWithTray(printdata.PrinterName, printdata.Tray, filePath);
             }
             finally
             {
@@ -48,15 +61,14 @@ public sealed class PrinterService : IPrinterService
             }
 
             return PrintSubmitResult.Ok();
-        
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Print failed");
             return PrintSubmitResult.Fail(ex.Message);
         }
-      
     }
+
     private async Task<string> PrepareTempFile(PrintData printdata)
     {
         var tempDir = Path.Combine(Path.GetTempPath(), "LocalServicePrint");
@@ -64,7 +76,7 @@ public sealed class PrinterService : IPrinterService
 
         var filePath = Path.Combine(tempDir, $"{printdata.DocumentType}_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}.pdf");
         await File.WriteAllBytesAsync(filePath, printdata.Base64bytes);
-        _logger.LogInformation ("---------------------------------------");
+        _logger.LogInformation("---------------------------------------");
         _logger.LogInformation("Printing: DocType={DocType}, Printer={Printer}, Tray={Tray}, File={File}",
             printdata.DocumentType, printdata.PrinterName, printdata.Tray, filePath);
         _logger.LogInformation("---------------------------------------");
@@ -72,10 +84,7 @@ public sealed class PrinterService : IPrinterService
         return filePath;
     }
 
-    public static void PrintWithTray(
-        string printerName,
-        string trayName,
-        string pdfPath)
+    public static void PrintWithTray(string printerName, string trayName, string pdfPath)
     {
         if (string.IsNullOrWhiteSpace(printerName))
             throw new ArgumentException("Printer name is required");
@@ -87,14 +96,12 @@ public sealed class PrinterService : IPrinterService
             throw new FileNotFoundException("PDF file not found", pdfPath);
 
         using var pdf = PdfDocument.Load(pdfPath);
-
         using var printDoc = pdf.CreatePrintDocument();
 
         printDoc.PrinterSettings.PrinterName = printerName;
 
         if (!printDoc.PrinterSettings.IsValid)
-            throw new InvalidOperationException(
-                $"Printer '{printerName}' is not valid");
+            throw new InvalidOperationException($"Printer '{printerName}' is not valid");
 
         bool isPrinterHasTraies = printDoc.PrinterSettings.PaperSources?.Count > 0;
         if (isPrinterHasTraies)
@@ -102,7 +109,7 @@ public sealed class PrinterService : IPrinterService
             var trayKind = TrayKindMapper.Parse(trayName);
             var tray = printDoc.PrinterSettings.PaperSources
                 .Cast<PaperSource>()
-                 .FirstOrDefault(ps => ps.Kind == trayKind);
+                .FirstOrDefault(ps => ps.Kind == trayKind);
 
             if (tray == null)
             {
@@ -111,15 +118,12 @@ public sealed class PrinterService : IPrinterService
                         .Cast<PaperSource>()
                         .Select(p => p.SourceName));
 
-                throw new InvalidOperationException(
-                    $"Tray '{trayName}' not found. Available trays: {available}");
+                throw new InvalidOperationException($"Tray '{trayName}' not found. Available trays: {available}");
             }
 
-            //setting the tray for printing
             printDoc.DefaultPageSettings.PaperSource = tray;
         }
 
-        // הדפס
         printDoc.Print();
     }
 }

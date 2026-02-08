@@ -1,6 +1,4 @@
-﻿
-
-namespace LocalService.Host.Models
+﻿namespace LocalService.Host.Models
 {
     public sealed class ExecuteRequest
     {

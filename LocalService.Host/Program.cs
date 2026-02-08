@@ -36,7 +36,8 @@ builder.Logging.AddProvider(new SimpleFileLoggerProvider(logPath));
 
 // ===== Services (DI) =====
 builder.Services.AddSingleton(new PrinterConfigStore(configPath));
-builder.Services.AddSingleton<IPrinterService, PrinterService>(); 
+builder.Services.AddSingleton<PrintWorker>();
+builder.Services.AddSingleton<IPrinterService, PrinterService>();
 builder.Services.AddSingleton<ActionDispatcher>();
 
 // ===== Kestrel: localhost only =====
