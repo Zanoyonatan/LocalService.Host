@@ -1,6 +1,7 @@
-﻿using LocalService.Host.Core;
+﻿using LocalService.Host.Abstractions;
+using LocalService.Host.Core;
+using LocalService.Host.Printing;
 using LocalService.Host.Infra;
-using LocalService.Host.Models;
 using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,7 +13,7 @@ var logPath = GetStringArg(args, "--log", @"N:\data\LocalServicelog");
 var curDate =DateTime.Now.ToString("ddMMyyyy");
 logPath = Path.Combine(logPath,string.Concat( Environment.MachineName , $"_{curDate}.log"));
 
-#region temp for simulate using pdf - not reuired
+#region temp for simulate using pdf - not required
 var environment = GetStringArg(args, "--env", "D002");
 
 
@@ -99,12 +100,12 @@ app.MapPost("/api/execute", async (ExecuteRequest req, ActionDispatcher dispatch
 
 app.MapPost("/api/shutdown", (HttpContext ctx) =>
 {
-    // We return "accepted" immediately, then stop gracefully
+    // return "accepted" immediately, then stop gracefully
     _ = Task.Run(async () =>
     {
         try
         {
-            await Task.Delay(50);
+            await Task.Delay(5000);
             lifetime.StopApplication();
         }
         catch { /* best effort */ }
