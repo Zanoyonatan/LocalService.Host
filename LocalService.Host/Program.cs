@@ -1,7 +1,6 @@
 ﻿using LocalService.Host.Core;
 using LocalService.Host.Infra;
 using LocalService.Host.Models;
-using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -75,7 +74,6 @@ app.Use(async (ctx, next) =>
         return;
     }
     // Require JWT-like token for /api/*
-    //to do -- add machine name for avoid attack with token 
     if (ctx.Request.Path.StartsWithSegments("/api"))
     {
         if (!JwtHeaderValidator.TryValidateAuthorizationHeader(ctx.Request, out var error))

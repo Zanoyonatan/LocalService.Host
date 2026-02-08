@@ -1,4 +1,5 @@
 ﻿using LocalService.Host.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LocalService.Host.Core;
 
@@ -65,7 +66,7 @@ public sealed class ActionDispatcher
                 tray: mapping.Tray);
 
             return printResult.Success
-                ? ExecuteResult.Ok(message: "print_submitted")
+                ? ExecuteResult.Accepted (message: "print_submitted")
                 : ExecuteResult.Fail(500, $"print_failed:{printResult.Error}");
         }
         catch (FormatException)
