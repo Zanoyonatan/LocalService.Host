@@ -27,14 +27,21 @@ public sealed class PrinterService : IPrinterService
         try
         {
             var filePath = await PrepareTempFile(printdata);
-            
+
             //lock by printerName cause each req can change default tray
             var sem = GetPrinterLock(printdata.PrinterName);
             await sem.WaitAsync();
 
             try
             {
-                PrintWithTray(printdata.PrinterName, printdata.Tray, filePath);
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+                await Task
+                    .Run(() =>
+                    {
+                        PrintWithTray(printdata.PrinterName, printdata.Tray, filePath);
+                    })
+                    .WaitAsync(cts.Token);
             }
             finally
             {

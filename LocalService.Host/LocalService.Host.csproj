@@ -1,35 +1,26 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
- 
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <PlatformTarget>x64</PlatformTarget>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
 
-	
-		  <TargetFramework>net8.0-windows</TargetFramework>
-		  <UseWindowsForms>true</UseWindowsForms>
+		<!-- ברירת מחדל נשארת x64 -->
+		<Platforms>x64;x86</Platforms>
+		<PlatformTarget>x64</PlatformTarget>
+	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Platform)'=='x64'">
+		<PlatformTarget>x64</PlatformTarget>
+	</PropertyGroup>
 
-  </PropertyGroup>
+	<PropertyGroup Condition="'$(Platform)'=='x86'">
+		<PlatformTarget>x86</PlatformTarget>
+	</PropertyGroup>
 
-  <ItemGroup>
-	 
-   
-    <PackageReference Include="PDFium.WindowsV2" Version="1.1.4" />
-	 
-   
-    <PackageReference Include="PdfiumViewer" Version="2.13.0" />
-	 
-   
-    <PackageReference Include="PdfiumViewer.Native.x86.v8-xfa" Version="2018.4.8.256" />
-	 
-   
-    <PackageReference Include="PdfiumViewer.Native.x86_64.v8-xfa" Version="2018.4.8.256" />
-	  <None Include="$(UserProfile)\.nuget\packages\pdfium.nativeassets.windows\**\runtimes\win-x64\native\pdfium.dll">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </None>
+	<ItemGroup>
 	  <Compile Remove="DevTools\**" />
 	  <Compile Remove="Models\**" />
 	  <Content Remove="DevTools\**" />
@@ -38,19 +29,20 @@
 	  <EmbeddedResource Remove="Models\**" />
 	  <None Remove="DevTools\**" />
 	  <None Remove="Models\**" />
-	  <Content Remove="C:\Users\P0039101\.nuget\packages\pdfiumviewer.native.x86_64.v8-xfa\2018.4.8.256\Build\x64\pdfium.dll" />
-	  <None Remove="C:\Users\P0039101\.nuget\packages\pdfium.windowsv2\1.1.4\build\pdfium_x64.dll" />
-	  <None Remove="C:\Users\P0039101\.nuget\packages\pdfium.windowsv2\1.1.4\build\pdfium_x86.dll" />
-    <PackageReference Include="System.Drawing.Common" Version="10.0.2" />
-  </ItemGroup>
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Abstractions\Abstractions.csproj" />
-    <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
-    <ProjectReference Include="..\Printing\Printing.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="PdfiumViewer" Version="2.13.0" />
+		<PackageReference Include="PdfiumViewer.Native.x86_64.v8-xfa" Version="2018.4.8.256" />
+		<PackageReference Include="PdfiumViewer.Native.x86.v8-xfa" Version="2018.4.8.256" />
+		<PackageReference Include="System.Drawing.Common" Version="10.0.2" />
+	</ItemGroup>
 
- 
+	<ItemGroup>
+		<ProjectReference Include="..\Abstractions\Abstractions.csproj" />
+		<ProjectReference Include="..\Core\Core.csproj" />
+		<ProjectReference Include="..\Infrastructure\Infrastructure.csproj" />
+		<ProjectReference Include="..\Printing\Printing.csproj" />
+	</ItemGroup>
 
 </Project>

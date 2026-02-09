@@ -63,18 +63,24 @@ public sealed class ActionDispatcher
 
             _worker.Enqueue(job);
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            try
-            {
-                var result = await job.Completion.Task.WaitAsync(cts.Token);
+            var timeout = TimeSpan.FromSeconds(20);
+            var delayTask = Task.Delay(timeout);
+            var completed = await Task.WhenAny(job.Completion.Task, delayTask);
 
+            if (completed == job.Completion.Task)
+            {
+                // print result finished within timeout
+                var result = await job.Completion.Task; // already completed
                 return result.Success
                     ? ExecuteResult.Accepted(message: "print_accepted")
                     : ExecuteResult.Fail(500, $"print_failed:{result.Error}");
             }
-            catch (OperationCanceledException)
+            else
             {
+                // timeout expired, job continues in background
+                _logger.LogWarning("Print request timeout for DocumentType={DocumentType}. Job continues in background.", documentType);
                 return ExecuteResult.Fail(504, "print_timeout");
+
             }
         }
         catch (FormatException)
