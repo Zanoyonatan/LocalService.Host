@@ -34,7 +34,7 @@ public sealed class PrinterService : IPrinterService
 
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(18));
 
                 await Task
                     .Run(() =>
