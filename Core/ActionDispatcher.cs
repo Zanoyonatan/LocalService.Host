@@ -77,8 +77,7 @@ public sealed class ActionDispatcher
                 return result.Error switch
                 {
                     "printer_not_found" => ExecuteResult.Fail(400, "printer_not_found"),
-                    "invalid_tray" => ExecuteResult.Fail(400, "invalid_tray"),
-                    "file_not_valid" => ExecuteResult.Fail(400, "file_not_valid"),
+                    "invalid_tray" => ExecuteResult.Fail(400, "invalid_tray"), 
 
                     _ => ExecuteResult.Fail(500, $"print_failed:{result.Error}")
                 };
