@@ -6,7 +6,7 @@ using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== Settings =====
+//Settings
 var port = GetIntArg(args, "--port", 5017);
 var configPath = GetStringArg(args, "--config", @"N:\data\printers.config.json");
 var logPath = GetStringArg(args, "--log", @"N:\data\LocalServicelog");
@@ -31,11 +31,11 @@ Environment.SetEnvironmentVariable(
 //   // builder.Services.AddSingleton<IPrinterService, DevModePdfPrinter>();
 //}
 #endregion
-// ===== Logging to file (stable, no dependencies) =====
+//Logging to file (stable, no dependencies)
 builder.Logging.ClearProviders();
 builder.Logging.AddProvider(new SimpleFileLoggerProvider(logPath));
 
-// ===== Services (DI) =====
+//Services (DI) 
 builder.Services.AddSingleton<PrinterConfigStore>(sp =>
     new PrinterConfigStore(configPath));
 
@@ -43,7 +43,7 @@ builder.Services.AddSingleton<PrintWorker>();
 builder.Services.AddSingleton<IPrinterService, PrinterService>();
 builder.Services.AddSingleton<ActionDispatcher>();
 
-// ===== Kestrel: localhost only =====
+//  Kestrel: localhost only 
 builder.WebHost.ConfigureKestrel(opt =>
 {
     opt.ListenLocalhost(port); // binds to 127.0.0.1 only
