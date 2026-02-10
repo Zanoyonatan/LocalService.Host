@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using PdfiumViewer;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.Drawing.Printing;
 
 namespace LocalService.Host.Printing;
@@ -50,6 +51,15 @@ public sealed class PrinterService : IPrinterService
 
             return PrintSubmitResult.Ok();
         }
+        catch (InvalidPrinterException ex)
+        {
+            return PrintSubmitResult.Fail("printer_not_found");
+        }
+        catch (Win32Exception ex) when (ex.Message.Contains("printer"))
+        {
+            return PrintSubmitResult.Fail("printer_not_found");
+
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Print failed");
@@ -89,7 +99,7 @@ public sealed class PrinterService : IPrinterService
         printDoc.PrinterSettings.PrinterName = printerName;
 
         if (!printDoc.PrinterSettings.IsValid)
-            throw new InvalidOperationException($"Printer '{printerName}' is not valid");
+            throw new InvalidPrinterException(printDoc.PrinterSettings);// "Printer '{printerName}' is not valid");
 
         bool isPrinterHasTraies = printDoc.PrinterSettings.PaperSources?.Count > 0;
         if (isPrinterHasTraies)

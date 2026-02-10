@@ -71,9 +71,17 @@ public sealed class ActionDispatcher
             {
                 // print result finished within timeout
                 var result = await job.Completion.Task; // already completed
-                return result.Success
-                    ? ExecuteResult.Accepted(message: "print_accepted")
-                    : ExecuteResult.Fail(500, $"print_failed:{result.Error}");
+                if (result.Success)
+                    return ExecuteResult.Accepted(message: "print_accepted");
+
+                return result.Error switch
+                {
+                    "printer_not_found" => ExecuteResult.Fail(400, "printer_not_found"),
+                    "invalid_tray" => ExecuteResult.Fail(400, "invalid_tray"),
+                    "file_not_valid" => ExecuteResult.Fail(400, "file_not_valid"),
+
+                    _ => ExecuteResult.Fail(500, $"print_failed:{result.Error}")
+                };
             }
             else
             {
